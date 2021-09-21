@@ -1,0 +1,33 @@
+* moviedb-proxy
+
+** Run in docker
+
+First, build the image:
+
+#+begin_src shell
+docker build -t moviedb-proxy .
+#+end_src
+
+Then, start a container in the foreground with:
+
+#+begin_src shell
+docker run --rm -p 8080:8080 -it --init moviedb-proxy:latest
+#+end_src
+
+or start a detached container with:
+
+#+begin_src shell
+docker run -d -p 8080:8080 moviedb-proxy:latest
+#+end_src
+
+
+** AC
+- [ ] get the correct data
+- [ ] tests
+- [ ] run service in docker
+- [ ] run tests in docker
+
+*** my personal shoulds
+- [ ] eslint
+- [ ] typescript
+- [ ] multi-stage docker builds (shared base between "run" and "test")

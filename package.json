@@ -8,5 +8,9 @@
   },
   "devDependencies": {
     "typescript": "^4.4.3"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node ."
   }
 }
