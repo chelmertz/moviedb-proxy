@@ -1,5 +1,10 @@
 * moviedb-proxy
 
+** Prerequisite: get a TMDB token
+
+Register at https://www.themoviedb.org/ and request an API token. Store it
+safely and properly pass it to the docker container at runtime.
+
 ** Run in docker
 
 First, build the image:
@@ -11,23 +16,37 @@ docker build -t moviedb-proxy .
 Then, start a container in the foreground with:
 
 #+begin_src shell
-docker run --rm -p 8080:8080 -it --init moviedb-proxy:latest
+docker run --rm -p 8080:8080 -it --init -e TMDB_API_KEY=xxxxx moviedb-proxy:latest
 #+end_src
 
 or start a detached container with:
 
 #+begin_src shell
-docker run -d -p 8080:8080 moviedb-proxy:latest
+docker run -d -p 8080:8080 -e TMDB_API_KEY=xxxxx moviedb-proxy:latest
 #+end_src
 
+*** Debugging the built docker image
+
+#+begin_src shell
+docker run --rm -p 8080:8080 -it --init -e TMDB_API_KEY=xxxxx moviedb-proxy:latest sh
+#+end_src
+
+You could also [[https://docs.docker.com/develop/develop-images/multistage-build/#stop-at-a-specific-build-stage][debug a specific target]] in the multi stage build.
 
 ** AC
 - [ ] get the correct data
-- [ ] tests
-- [ ] run service in docker
+- [ ] tests (mock external service)
+- [ ] tests (our service)
+- [x] run service in docker
 - [ ] run tests in docker
 
 *** my personal shoulds
 - [ ] eslint
-- [ ] typescript
+- [X] typescript
 - [ ] multi-stage docker builds (shared base between "run" and "test")
+
+** Out of scope:
+- caching responses
+- verifying that the data from TMDB matches the defined TS interfaces
+- not removing duplicates from the combined popular/top-rated lists
+  - if they are the exact same lists, we would issue too many requests to find differences
