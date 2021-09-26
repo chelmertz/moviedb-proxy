@@ -1,113 +1,7 @@
 // TODO decouple emitting the result from the fetching part, so that we can focus on testing the combination/HTTP
 // failure modes
 
-import * as assert from 'assert';
-import axios, {AxiosResponse} from 'axios';
-
-const sortMoviesByProp =
-  (prop: keyof TmdbMovie) =>
-    (a: TmdbMovie, b: TmdbMovie) => {
-      if (a[prop] < b[prop]) {
-        return -1;
-      } else if (a[prop] > b[prop]) {
-        return 1;
-      }
-      return 0;
-    };
-
-export class Tmdb {
-  constructor(private readonly apiKey: string, private readonly timeoutMs: number) {
-  }
-
-  /**
-   * The API has a fixed page size of 20.
-   */
-  private static apiPageSize = 20;
-
-  /**
-   * Arbitrarily chosen
-   */
-  public static maxSearchResults = 400;
-
-  /**
-   * Executes a HTTP request and leaves the error handling to the caller.
-   *
-   * This function is not wrapping the result or error in any way, so you're exposed directly to the inner logic of
-   * Axios, the HTTP client.
-   */
-  // TODO consider using a sum type as return value, in favor of runtime exceptions
-  async search({term, limit = Tmdb.maxSearchResults}: {term: string, limit: number}): Promise<TmdbMovie[]> {
-    // Some contracts:
-    assert(limit > 0);
-    assert(
-      limit <= Tmdb.maxSearchResults,
-      `You tried searching for ${limit}, please limit yourself to ${Tmdb.maxSearchResults}`
-    );
-    assert(term.length > 0);
-
-    const maxPage = Math.ceil(limit / Tmdb.apiPageSize);
-
-    console.log('maxPage: ', maxPage, 'based on limit', limit, 'for page size', Tmdb.apiPageSize);
-
-    let result: TmdbMovie[] = [];
-    for (let page = 1; page <= maxPage; page++) {
-      // TODO trigger a bad request (TDD) and see what happens
-      const response: AxiosResponse<TmdbResponse> = await axios.get(
-        `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(term)}`
-        + `&api_key=${encodeURIComponent(this.apiKey)}&page=${page}`,
-        {timeout: this.timeoutMs}
-      );
-
-      if (response.status === 200) {
-        // TODO trigger a 500 response on our side otherwise?
-        result = result.concat(response.data.results);
-      }
-    }
-
-    // Yes, we're throwing away fetched data, but that's the best we can do with tmdb not having
-    // a way to configure page size.
-    return result.slice(0, limit);
-  }
-
-  async topRatedPopular(): Promise<TmdbMovie[]> {
-    // TODO trigger a bad request (TDD) and see what happens
-    const topRatedResponse: Promise<AxiosResponse<TmdbResponse>> = axios.get(
-      `https://api.themoviedb.org/3/movie/top_rated?api_key=${encodeURIComponent(this.apiKey)}`
-      + `&include_adult=false&page=1`,
-      {timeout: this.timeoutMs}
-    );
-
-    const popularResponse: Promise<AxiosResponse<TmdbResponse>> = axios.get(
-      `https://api.themoviedb.org/3/movie/popular?api_key=${encodeURIComponent(this.apiKey)}`
-      + `&include_adult=false&page=1`,
-      {timeout: this.timeoutMs}
-    );
-
-    const result: TmdbMovie[] = await Promise.all([popularResponse, topRatedResponse])
-      .then((responses: AxiosResponse<TmdbResponse>[]) => {
-        // Let's decide that users of our proxy service are fine with just getting popular or top rated movies,
-        // just in case one of the requests failed.
-
-        const successfulResponses = responses.filter(r => r.status === 200);
-
-        if (successfulResponses.length === 0) {
-          // TODO deal with errors
-          return [];
-        } else if (successfulResponses.length === 1) {
-          return successfulResponses[0].data.results;
-        } else {
-          return successfulResponses[0].data.results.slice(0, 10)
-            .concat(successfulResponses[1].data.results.slice(0, 10));
-        }
-      });
-
-    console.log('result size', result.length)
-
-    return result.sort(sortMoviesByProp('title'));
-  }
-}
-
-interface TmdbMovie {
+export interface TmdbMovie {
   adult: boolean;
   backdrop_path: string;
   genre_ids: number[];
@@ -134,4 +28,54 @@ export interface TmdbResponse {
   results: TmdbMovie[];
   total_pages: number;
   total_results: number;
+}
+
+export interface TmdbApiClient {
+  search: ({term, limit}: {term: string, limit: number}) => Promise<TmdbMovie[]>;
+  popular: () => Promise<TmdbMovie[]>;
+  topRated: () => Promise<TmdbMovie[]>;
+}
+
+export const sortMoviesByProp =
+  (prop: keyof TmdbMovie) =>
+    (a: TmdbMovie, b: TmdbMovie) => {
+      if (a[prop] < b[prop]) {
+        return -1;
+      } else if (a[prop] > b[prop]) {
+        return 1;
+      }
+      return 0;
+    };
+
+/**
+ * Some kind of Gateway or facade pattern.
+ */
+export class TmdbService {
+  /**
+   * Arbitrarily chosen
+   */
+  public static maxSearchResults = 400;
+
+  constructor(private readonly apiClient: TmdbApiClient) {
+  }
+
+  /**
+   * Executes a HTTP request and leaves the error handling to the caller.
+   *
+   * This function is not wrapping the result or error in any way, so you're exposed directly to the inner logic of
+   * Axios, the HTTP client.
+   */
+  // TODO consider using a sum type as return value, in favor of runtime exceptions
+  async search({term, limit = TmdbService.maxSearchResults}: {term: string, limit: number}): Promise<TmdbMovie[]> {
+    return this.apiClient.search({term, limit});
+  }
+
+  // TODO Let's decide that users of our proxy service are fine with just getting popular or top rated movies,
+  // just in case one of the requests failed.
+  async topRatedPopular(): Promise<TmdbMovie[]> {
+    const result: TmdbMovie[] = await Promise.all([this.apiClient.popular(), this.apiClient.topRated()])
+      .then(([popular, topRated]) => popular.slice(0, 10).concat(topRated.slice(0, 10)));
+
+    return result.sort(sortMoviesByProp('title'));
+  }
 }
