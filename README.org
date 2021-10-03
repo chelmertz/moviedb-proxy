@@ -45,16 +45,15 @@ docker run --rm -p 8080:8080 -it --init -e TMDB_API_KEY=xxxxx moviedb-proxy:late
 You could also [[https://docs.docker.com/develop/develop-images/multistage-build/#stop-at-a-specific-build-stage][debug a specific target]] in the multi stage build.
 
 ** AC
-- [ ] get the correct data
-- [ ] tests (mock external service)
-- [ ] tests (our service)
-- [x] run service in docker
-- [ ] run tests in docker
+- [X] get the correct data
+- [X] tests (mock external service)
+- [X] tests (our service)
+- [X] run service in docker
+- [X] run tests in docker
 
 *** my personal shoulds
-- [ ] eslint
 - [X] typescript
-- [ ] multi-stage docker builds (shared base between "run" and "test")
+- [X] multi-stage docker builds (shared base between "run" and "test")
 
 ** Out of scope:
 - caching responses
