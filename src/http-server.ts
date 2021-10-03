@@ -2,7 +2,7 @@ import * as express from 'express';
 import {BadInput, TmdbService} from './moviedb-service';
 
 const handleError = (e: Error): [number, string] =>
-  e instanceof BadInput
+  (e as BadInput).custom !== undefined
     ? [400, e.message]
     : [502, 'Bad Gateway'];
 

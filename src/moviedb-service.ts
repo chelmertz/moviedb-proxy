@@ -51,6 +51,8 @@ export class BadInput extends Error {
   constructor(message: string) {
     super(message);
   }
+
+  public custom = 'custom';
 }
 
 /**
