@@ -6,7 +6,7 @@ const handleError = (e: Error): [number, string] =>
     ? [400, e.message]
     : [502, 'Bad Gateway'];
 
-export const appWithService = (tmdbService: TmdbService) =>
+export const appWithService = (tmdbService: TmdbService, debug?: boolean) =>
   express()
     .get('/', (req, res) => {
       res.send('Try <a href="/search/dune?limit=4">/search/dune?limit=4</a> or <a href="/top">/top</a>')
@@ -24,6 +24,9 @@ export const appWithService = (tmdbService: TmdbService) =>
         res.send(result);
       } catch (e) {
         const [code, message] = handleError(e);
+        if (debug) {
+          console.error(e);
+        }
         res.status(code).send(message);
       }
     })
@@ -33,6 +36,9 @@ export const appWithService = (tmdbService: TmdbService) =>
         res.send(result);
       } catch (e) {
         const [code, message] = handleError(e);
+        if (debug) {
+          console.error(e);
+        }
         res.status(code).send(message);
       }
     });

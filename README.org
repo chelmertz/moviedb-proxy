@@ -36,6 +36,8 @@ or start a detached container with:
 docker run -d -p 8080:8080 -e TMDB_API_KEY=xxxxx moviedb-proxy:latest
 #+end_src
 
+If you pass ~-e DEBUG=0~, you opt-out of getting a log of each exception at stderr.
+
 *** Debugging the built docker image
 
 #+begin_src shell

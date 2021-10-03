@@ -10,9 +10,11 @@ if (!apiKey) {
   throw new Error('Please provide the environment variable TMDB_API_KEY');
 }
 
+const debug = process.env.DEBUG !== '0';
+
 const tmdbService = new TmdbService(new TmdbApiClientAxios(apiKey, 8_000));
 
-appWithService(tmdbService)
+appWithService(tmdbService, debug)
   .listen(port, () => {
     console.log(`Started app on http://localhost:${port}`);
   });
