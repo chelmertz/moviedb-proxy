@@ -1,6 +1,3 @@
-// TODO decouple emitting the result from the fetching part, so that we can focus on testing the combination/HTTP
-// failure modes
-
 export interface TmdbMovie {
   adult: boolean;
   backdrop_path: string;
@@ -97,8 +94,6 @@ export class TmdbService {
     return this.apiClient.search({term, limit});
   }
 
-  // TODO Let's decide that users of our proxy service are fine with just getting popular or top rated movies,
-  // just in case one of the requests failed.
   async topRatedPopular(): Promise<TmdbMovie[]> {
     const result: TmdbMovie[] = await Promise.all([this.apiClient.popular(), this.apiClient.topRated()])
       .then(([popular, topRated]) => popular.slice(0, 10).concat(topRated.slice(0, 10)));

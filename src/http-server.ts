@@ -32,7 +32,6 @@ export const appWithService = (tmdbService: TmdbService) =>
         const result = await tmdbService.topRatedPopular();
         res.send(result);
       } catch (e) {
-        // TODO extract to error handling middleware
         const [code, message] = handleError(e);
         res.status(code).send(message);
       }
