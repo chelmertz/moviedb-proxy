@@ -1,6 +1,5 @@
-import * as assert from 'assert';
 import axios, {AxiosResponse} from 'axios';
-import {TmdbService, TmdbApiClient, TmdbMovie, TmdbResponse} from './moviedb-service';
+import {TmdbApiClient, TmdbMovie, TmdbResponse} from './moviedb-service';
 
 export class TmdbApiClientAxios implements TmdbApiClient {
 
@@ -13,17 +12,7 @@ export class TmdbApiClientAxios implements TmdbApiClient {
   private apiPageSize = 20;
 
   async search({term, limit}: {term: string; limit: number}): Promise<TmdbMovie[]> {
-    // Some contracts:
-    assert(limit > 0);
-    assert(
-      limit <= TmdbService.maxSearchResults,
-      `You tried searching for ${limit}, please limit yourself to ${TmdbService.maxSearchResults}`
-    );
-    assert(term.length > 0);
-
     const maxPage = Math.ceil(limit / this.apiPageSize);
-
-    console.log('maxPage: ', maxPage, 'based on limit', limit, 'for page size', this.apiPageSize);
 
     let result: TmdbMovie[] = [];
     for (let page = 1; page <= maxPage; page++) {

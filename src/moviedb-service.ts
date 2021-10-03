@@ -30,10 +30,13 @@ export interface TmdbResponse {
   total_results: number;
 }
 
+export type TmdbSearch = ({term, limit}: {term: string, limit: number}) => Promise<TmdbMovie[]>
+export type TmdbCallback = () => Promise<TmdbMovie[]>;
+
 export interface TmdbApiClient {
-  search: ({term, limit}: {term: string, limit: number}) => Promise<TmdbMovie[]>;
-  popular: () => Promise<TmdbMovie[]>;
-  topRated: () => Promise<TmdbMovie[]>;
+  search: TmdbSearch;
+  popular: TmdbCallback;
+  topRated: TmdbCallback;
 }
 
 export const sortMoviesByProp =
@@ -46,6 +49,12 @@ export const sortMoviesByProp =
       }
       return 0;
     };
+
+export class BadInput extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 /**
  * Some kind of Gateway or facade pattern.
@@ -65,8 +74,26 @@ export class TmdbService {
    * This function is not wrapping the result or error in any way, so you're exposed directly to the inner logic of
    * Axios, the HTTP client.
    */
-  // TODO consider using a sum type as return value, in favor of runtime exceptions
-  async search({term, limit = TmdbService.maxSearchResults}: {term: string, limit: number}): Promise<TmdbMovie[]> {
+  async search(
+    {term, limit}: {term: string | undefined, limit: string | number | undefined}
+  ): Promise<TmdbMovie[]> {
+    if (typeof term !== 'string' || term.length < 1 || term.length > 100) {
+      throw new BadInput('Missing or invalid search term. Try /search/dune');
+    }
+
+    if (typeof limit === 'string') {
+      limit = parseInt(limit);
+      if (isNaN(limit)) {
+        throw new BadInput('Bad format of the limit query parameter');
+      }
+    } else if (typeof limit !== 'number') {
+      limit = TmdbService.maxSearchResults;
+    }
+
+    if (limit < 1 || limit > TmdbService.maxSearchResults) {
+      throw new BadInput(`Limit must be between than 1 and ${TmdbService.maxSearchResults}`);
+    }
+
     return this.apiClient.search({term, limit});
   }
 

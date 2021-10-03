@@ -5,6 +5,7 @@ COPY package.json yarn.lock ./
 RUN yarn install
 COPY . ./
 RUN yarn build
+RUN yarn test
 
 
 FROM node:16-alpine3.11 as run

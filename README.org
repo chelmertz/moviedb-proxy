@@ -1,5 +1,16 @@
 * moviedb-proxy
 
+** "Architecture"
+
+A regular [[https://expressjs.com/][Express]] application handles the routing.
+
+The application is injected with a TmdbService, an interface for any code to
+communicate with TMDB. TmdbService doesn't know about Express.
+
+TmdbService itself uses an HTTP client to talk to the actual service, so that we
+can test each boundary. In the live application,
+[[https://github.com/axios/axios][Axios]] is used.
+
 ** Prerequisite: get a TMDB token
 
 Register at https://www.themoviedb.org/ and request an API token. Store it

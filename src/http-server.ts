@@ -1,5 +1,10 @@
 import * as express from 'express';
-import {TmdbService} from './moviedb-service';
+import {BadInput, TmdbService} from './moviedb-service';
+
+const handleError = (e: Error): [number, string] =>
+  e instanceof BadInput
+    ? [400, e.message]
+    : [502, 'Bad Gateway'];
 
 export const appWithService = (tmdbService: TmdbService) =>
   express()
@@ -7,27 +12,19 @@ export const appWithService = (tmdbService: TmdbService) =>
       res.send('Try <a href="/search/dune?limit=4">/search/dune?limit=4</a> or <a href="/top">/top</a>')
     })
     .get('/search/:term', async (req, res) => {
-      if (typeof req.params['term'] !== 'string' || req.params['term'].length < 1 || req.params['term'].length > 100) {
-        res.status(400).send({error: 'Missing or invalid search term. Try /search/dune'});
-        return;
-      }
-      const term: string = req.params['term'];
-
-      let limit: number | undefined;
-      if (typeof req.query.limit === 'string') {
-        limit = parseInt(req.query.limit);
-        if (isNaN(limit)) {
-          res.status(400).send({error: 'Bad format of the limit query parameter'});
-          return;
-        }
-      }
-
       try {
-        const result = await tmdbService.search({term, limit});
+        const result = await tmdbService.search({
+          term: req.params['term'],
+          /*
+           * Some basic input validation, we want the error handling inside tmdbService, but tmdbService should not
+           * know about Express' ReqQuery.
+           */
+          limit: typeof req.query.limit === 'string' ? req.query.limit : undefined
+        });
         res.send(result);
       } catch (e) {
-        console.error(`search: Error searching for '${term}'`, e);
-        res.status(502).send('Bad Gateway');
+        const [code, message] = handleError(e);
+        res.status(code).send(message);
       }
     })
     .get('/top', async (req, res) => {
@@ -35,7 +32,8 @@ export const appWithService = (tmdbService: TmdbService) =>
         const result = await tmdbService.topRatedPopular();
         res.send(result);
       } catch (e) {
-        console.error('top-rated: Error', e);
-        res.status(502).send('Bad Gateway');
+        // TODO extract to error handling middleware
+        const [code, message] = handleError(e);
+        res.status(code).send(message);
       }
     });
